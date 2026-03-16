@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+*.egg
+
+# 训练产出
+checkpoints/
+data/processed/
+*.pt
+*.npy
+*.npz
+*.onnx
+*.engine
+
+# 日志
+*.log
+
+# 环境
+.env
+venv/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# CodeBuddy
+.codebuddy/

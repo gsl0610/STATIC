@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STATIC-DSP 训练监控面板</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0a0a10;
+    color: #e0e0e6;
+    min-height: 100vh;
+  }
+  .header {
+    background: linear-gradient(135deg, #0f1524 0%, #1a0e2e 100%);
+    border-bottom: 1px solid #2a2a4a;
+    padding: 20px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .header h1 { font-size: 22px; font-weight: 700; color: #fff; }
+  .header .subtitle { font-size: 13px; color: #888; margin-top: 2px; }
+  .header-right { display: flex; align-items: center; gap: 16px; }
+  .status-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 600;
+  }
+  .status-training { background: #0a2a1a; color: #34d399; border: 1px solid #166534; }
+  .status-completed { background: #1e3a5f; color: #60a5fa; border: 1px solid #1d4ed8; }
+  .status-error { background: #3a1a1a; color: #f87171; border: 1px solid #991b1b; }
+  .status-unknown { background: #2a2a2a; color: #888; border: 1px solid #444; }
+  .pulse { width: 8px; height: 8px; border-radius: 50%; animation: pulse 2s infinite; }
+  .pulse-green { background: #34d399; }
+  .pulse-blue { background: #60a5fa; }
+  .pulse-red { background: #f87171; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+  .refresh-info { font-size: 12px; color: #666; }
+  .container { max-width: 1400px; margin: 0 auto; padding: 24px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+  .card {
+    background: #12121c; border: 1px solid #1e1e30; border-radius: 12px; padding: 20px;
+  }
+  .card-label { font-size: 12px; color: #666; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+  .card-value { font-size: 28px; font-weight: 700; color: #fff; }
+  .card-sub { font-size: 12px; color: #888; margin-top: 4px; }
+  .card-value.green { color: #34d399; }
+  .card-value.blue { color: #60a5fa; }
+  .card-value.purple { color: #a78bfa; }
+  .card-value.orange { color: #f59e0b; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+  .chart-card {
+    background: #12121c; border: 1px solid #1e1e30; border-radius: 12px; padding: 20px;
+  }
+  .chart-card h3 { font-size: 15px; color: #a78bfa; margin-bottom: 16px; }
+  .chart-wrap { position: relative; height: 280px; }
+  .progress-bar-outer {
+    width: 100%; height: 24px; background: #1a1a2a; border-radius: 12px; overflow: hidden;
+    margin-top: 8px; position: relative;
+  }
+  .progress-bar-inner {
+    height: 100%; border-radius: 12px; transition: width 1s ease;
+    background: linear-gradient(90deg, #6366f1, #a78bfa, #c084fc);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; color: #fff; min-width: 40px;
+  }
+  .gpu-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 16px; }
+  .gpu-item { background: #0a0a14; border: 1px solid #1e1e30; border-radius: 8px; padding: 14px; }
+  .gpu-label { font-size: 11px; color: #666; margin-bottom: 4px; }
+  .gpu-val { font-size: 20px; font-weight: 700; }
+  .gpu-bar { height: 4px; background: #1a1a2a; border-radius: 2px; margin-top: 6px; overflow: hidden; }
+  .gpu-bar-inner { height: 100%; border-radius: 2px; transition: width 1s ease; }
+  .loss-table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+  .loss-table th, .loss-table td { padding: 8px 12px; text-align: left; font-size: 13px; border-bottom: 1px solid #1e1e30; }
+  .loss-table th { color: #888; font-weight: 500; }
+  .loss-table td { color: #ccc; }
+  .loss-table tr:hover td { background: #16162a; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+  .config-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #1a1a2a; }
+  .config-key { font-size: 13px; color: #888; }
+  .config-val { font-size: 13px; color: #60a5fa; font-weight: 600; }
+  @media (max-width: 900px) {
+    .grid-4 { grid-template-columns: repeat(2, 1fr); }
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 600px) {
+    .grid-4 { grid-template-columns: 1fr; }
+    .header { flex-direction: column; gap: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>STATIC-DSP 训练监控面板</h1>
+    <div class="subtitle">HunyuanLLM 1.8B + LoRA | V2 Anti-Overfitting Training</div>
+  </div>
+  <div class="header-right">
+    <span id="statusBadge" class="status-badge status-unknown">
+      <span class="pulse"></span> 加载中...
+    </span>
+    <span class="refresh-info">每 <span id="intervalSec">15</span>s 刷新 | <span id="lastUpdate">--</span></span>
+  </div>
+</div>
+
+<div class="container">
+  <!-- KPI Cards -->
+  <div class="grid-4">
+    <div class="card">
+      <div class="card-label">当前步数</div>
+      <div class="card-value blue" id="stepVal">--</div>
+      <div class="card-sub" id="stepSub">/ 20000</div>
+    </div>
+    <div class="card">
+      <div class="card-label">训练 Loss</div>
+      <div class="card-value green" id="lossVal">--</div>
+      <div class="card-sub" id="lossSub">--</div>
+    </div>
+    <div class="card">
+      <div class="card-label">验证 Loss (Best)</div>
+      <div class="card-value purple" id="valVal">--</div>
+      <div class="card-sub" id="valSub">--</div>
+    </div>
+    <div class="card">
+      <div class="card-label">预计剩余</div>
+      <div class="card-value orange" id="etaVal">--</div>
+      <div class="card-sub" id="etaSub">--</div>
+    </div>
+  </div>
+
+  <!-- Progress Bar -->
+  <div class="card" style="margin-bottom: 24px;">
+    <div class="card-label">训练进度</div>
+    <div class="progress-bar-outer">
+      <div class="progress-bar-inner" id="progressBar" style="width: 0%;">0%</div>
+    </div>
+    <div style="display:flex;justify-content:space-between;margin-top:6px;">
+      <span class="card-sub" id="progressStart">开始: --</span>
+      <span class="card-sub" id="progressElapsed">已用: --</span>
+    </div>
+  </div>
+
+  <!-- Charts -->
+  <div class="grid-2">
+    <div class="chart-card">
+      <h3>Training Loss 曲线</h3>
+      <div class="chart-wrap"><canvas id="lossChart"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h3>子任务 Loss 分解</h3>
+      <div class="chart-wrap"><canvas id="taskChart"></canvas></div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="chart-card">
+      <h3>Validation Loss 曲线</h3>
+      <div class="chart-wrap"><canvas id="valChart"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h3>Learning Rate 调度</h3>
+      <div class="chart-wrap"><canvas id="lrChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- GPU + Recent Loss Table -->
+  <div class="grid-2">
+    <div class="chart-card">
+      <h3>GPU 状态</h3>
+      <div class="gpu-grid">
+        <div class="gpu-item">
+          <div class="gpu-label">GPU 利用率</div>
+          <div class="gpu-val green" id="gpuUtil">--%</div>
+          <div class="gpu-bar"><div class="gpu-bar-inner" id="gpuUtilBar" style="width:0%;background:#34d399;"></div></div>
+        </div>
+        <div class="gpu-item">
+          <div class="gpu-label">显存占用</div>
+          <div class="gpu-val blue" id="gpuMem">-- / -- MiB</div>
+          <div class="gpu-bar"><div class="gpu-bar-inner" id="gpuMemBar" style="width:0%;background:#60a5fa;"></div></div>
+        </div>
+        <div class="gpu-item">
+          <div class="gpu-label">温度</div>
+          <div class="gpu-val orange" id="gpuTemp">--°C</div>
+          <div class="gpu-bar"><div class="gpu-bar-inner" id="gpuTempBar" style="width:0%;background:#f59e0b;"></div></div>
+        </div>
+        <div class="gpu-item">
+          <div class="gpu-label">功率</div>
+          <div class="gpu-val purple" id="gpuPower">-- W</div>
+          <div class="gpu-bar"><div class="gpu-bar-inner" id="gpuPowerBar" style="width:0%;background:#a78bfa;"></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="chart-card">
+      <h3>最近训练记录</h3>
+      <div style="max-height:300px;overflow-y:auto;">
+        <table class="loss-table">
+          <thead><tr><th>Step</th><th>Loss</th><th>CTR</th><th>CVR</th><th>Ret</th><th>LR</th></tr></thead>
+          <tbody id="lossTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- V2 Optimization Config -->
+  <div class="chart-card" style="margin-bottom:24px;">
+    <h3>V2 过拟合优化配置</h3>
+    <div class="grid-3" style="margin-top:12px;">
+      <div>
+        <div class="config-item"><span class="config-key">数据量</span><span class="config-val">200K (4x)</span></div>
+        <div class="config-item"><span class="config-key">学习率</span><span class="config-val">1e-4</span></div>
+        <div class="config-item"><span class="config-key">权重衰减</span><span class="config-val">1e-2</span></div>
+      </div>
+      <div>
+        <div class="config-item"><span class="config-key">Label Smoothing</span><span class="config-val">0.1</span></div>
+        <div class="config-item"><span class="config-key">Dropout (Head)</span><span class="config-val">0.3</span></div>
+        <div class="config-item"><span class="config-key">LoRA Dropout</span><span class="config-val">0.15</span></div>
+      </div>
+      <div>
+        <div class="config-item"><span class="config-key">特征 Mask Rate</span><span class="config-val">15%</span></div>
+        <div class="config-item"><span class="config-key">行为 Token Mask</span><span class="config-val">20%</span></div>
+        <div class="config-item"><span class="config-key">Early Stop Patience</span><span class="config-val">8</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API_URL = 'http://<YOUR_CVM_IP>:8787/api/training-status';
+const REFRESH_INTERVAL = 15000;
+
+// Chart.js defaults
+Chart.defaults.color = '#888';
+Chart.defaults.borderColor = '#1e1e30';
+Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, sans-serif';
+
+const chartOpts = (yTitle) => ({
+  responsive: true, maintainAspectRatio: false,
+  animation: { duration: 500 },
+  scales: {
+    x: { grid: { color: '#1a1a2a' }, ticks: { maxTicksLimit: 10, font: { size: 11 } } },
+    y: { grid: { color: '#1a1a2a' }, title: { display: true, text: yTitle, font: { size: 12 } } }
+  },
+  plugins: { legend: { labels: { boxWidth: 12, padding: 12, font: { size: 12 } } } }
+});
+
+const lossChart = new Chart(document.getElementById('lossChart'), {
+  type: 'line',
+  data: { labels: [], datasets: [{ label: 'Total Loss', data: [], borderColor: '#34d399', borderWidth: 2, pointRadius: 0, tension: 0.3 }] },
+  options: chartOpts('Loss')
+});
+
+const taskChart = new Chart(document.getElementById('taskChart'), {
+  type: 'line',
+  data: { labels: [], datasets: [
+    { label: 'CTR', data: [], borderColor: '#60a5fa', borderWidth: 2, pointRadius: 0, tension: 0.3 },
+    { label: 'CVR', data: [], borderColor: '#a78bfa', borderWidth: 2, pointRadius: 0, tension: 0.3 },
+    { label: 'Retrieval', data: [], borderColor: '#f59e0b', borderWidth: 2, pointRadius: 0, tension: 0.3 },
+  ] },
+  options: chartOpts('Loss')
+});
+
+const valChart = new Chart(document.getElementById('valChart'), {
+  type: 'line',
+  data: { labels: [], datasets: [{ label: 'Val Loss', data: [], borderColor: '#c084fc', borderWidth: 2, pointRadius: 3, pointBackgroundColor: '#c084fc', tension: 0.3 }] },
+  options: chartOpts('Val Loss')
+});
+
+const lrChart = new Chart(document.getElementById('lrChart'), {
+  type: 'line',
+  data: { labels: [], datasets: [{ label: 'Learning Rate', data: [], borderColor: '#f97316', borderWidth: 2, pointRadius: 0, tension: 0.3 }] },
+  options: chartOpts('LR')
+});
+
+function formatTime(secs) {
+  if (!secs || secs < 0) return '--';
+  const h = Math.floor(secs / 3600);
+  const m = Math.floor((secs % 3600) / 60);
+  if (h > 0) return `${h}h ${m}m`;
+  return `${m}m`;
+}
+
+function updateUI(d) {
+  // Status badge
+  const badge = document.getElementById('statusBadge');
+  if (d.status === 'training' && d.alive) {
+    badge.className = 'status-badge status-training';
+    badge.innerHTML = '<span class="pulse pulse-green"></span> 训练中';
+  } else if (d.status === 'completed') {
+    badge.className = 'status-badge status-completed';
+    badge.innerHTML = '<span class="pulse pulse-blue"></span> 已完成';
+  } else {
+    badge.className = 'status-badge status-error';
+    badge.innerHTML = '<span class="pulse pulse-red"></span> 已停止';
+  }
+
+  // KPI cards
+  document.getElementById('stepVal').textContent = d.step.toLocaleString();
+  document.getElementById('stepSub').textContent = `/ ${d.max_steps.toLocaleString()}`;
+
+  const latestLoss = d.losses.length > 0 ? d.losses[d.losses.length - 1] : null;
+  document.getElementById('lossVal').textContent = latestLoss ? latestLoss.total.toFixed(4) : '--';
+  document.getElementById('lossSub').textContent = latestLoss ? `CTR: ${latestLoss.ctr.toFixed(4)} | CVR: ${latestLoss.cvr.toFixed(4)}` : '--';
+
+  document.getElementById('valVal').textContent = d.best_val !== null ? d.best_val.toFixed(4) : (d.vals.length > 0 ? d.vals[d.vals.length-1].val.toFixed(4) : '--');
+  document.getElementById('valSub').textContent = d.vals.length > 0 ? `最新: ${d.vals[d.vals.length-1].val.toFixed(4)} (${d.vals.length} evals)` : '等待首次 eval...';
+
+  document.getElementById('etaVal').textContent = formatTime(d.eta);
+  document.getElementById('etaSub').textContent = d.sps ? `${d.sps}s/step | 已用 ${formatTime(d.elapsed)}` : '--';
+
+  // Progress bar
+  const pct = d.pct || 0;
+  document.getElementById('progressBar').style.width = pct + '%';
+  document.getElementById('progressBar').textContent = pct.toFixed(1) + '%';
+  document.getElementById('progressStart').textContent = d.start ? `开始: ${d.start}` : '开始: --';
+  document.getElementById('progressElapsed').textContent = `已用: ${formatTime(d.elapsed)}`;
+
+  // Charts
+  const steps = d.losses.map(l => l.step);
+  lossChart.data.labels = steps;
+  lossChart.data.datasets[0].data = d.losses.map(l => l.total);
+  lossChart.update('none');
+
+  taskChart.data.labels = steps;
+  taskChart.data.datasets[0].data = d.losses.map(l => l.ctr);
+  taskChart.data.datasets[1].data = d.losses.map(l => l.cvr);
+  taskChart.data.datasets[2].data = d.losses.map(l => l.ret);
+  taskChart.update('none');
+
+  if (d.vals.length > 0) {
+    valChart.data.labels = d.vals.map((v, i) => `Eval ${i+1}`);
+    valChart.data.datasets[0].data = d.vals.map(v => v.val);
+    valChart.update('none');
+  }
+
+  lrChart.data.labels = steps;
+  lrChart.data.datasets[0].data = d.losses.map(l => parseFloat(l.lr));
+  lrChart.update('none');
+
+  // GPU
+  if (d.gpu && !d.gpu.error) {
+    const g = d.gpu;
+    document.getElementById('gpuUtil').textContent = g.util + '%';
+    document.getElementById('gpuUtilBar').style.width = g.util + '%';
+    document.getElementById('gpuMem').textContent = `${g.mem_used} / ${g.mem_total} MiB`;
+    document.getElementById('gpuMemBar').style.width = (g.mem_used/g.mem_total*100).toFixed(1) + '%';
+    document.getElementById('gpuTemp').textContent = g.temp + '°C';
+    document.getElementById('gpuTempBar').style.width = (g.temp/90*100).toFixed(1) + '%';
+    document.getElementById('gpuPower').textContent = g.power.toFixed(1) + ' W';
+    document.getElementById('gpuPowerBar').style.width = (g.power/300*100).toFixed(1) + '%';
+  }
+
+  // Loss table (last 10 reversed)
+  const tbody = document.getElementById('lossTableBody');
+  const recent = d.losses.slice(-10).reverse();
+  tbody.innerHTML = recent.map(l =>
+    `<tr><td>${l.step}</td><td>${l.total.toFixed(4)}</td><td>${l.ctr.toFixed(4)}</td><td>${l.cvr.toFixed(4)}</td><td>${l.ret.toFixed(4)}</td><td>${l.lr}</td></tr>`
+  ).join('');
+
+  document.getElementById('lastUpdate').textContent = d.ts || new Date().toLocaleTimeString();
+}
+
+async function fetchStatus() {
+  try {
+    const resp = await fetch(API_URL, { signal: AbortSignal.timeout(10000) });
+    const data = await resp.json();
+    updateUI(data);
+  } catch (e) {
+    const badge = document.getElementById('statusBadge');
+    badge.className = 'status-badge status-error';
+    badge.innerHTML = '<span class="pulse pulse-red"></span> API 离线';
+    document.getElementById('lastUpdate').textContent = '连接失败 ' + new Date().toLocaleTimeString();
+  }
+}
+
+fetchStatus();
+setInterval(fetchStatus, REFRESH_INTERVAL);
+</script>
+</body>
+</html>

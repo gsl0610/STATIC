@@ -1,0 +1,295 @@
+# ============================================================
+# STATIC-DSP 广告点击率/转化率预估系统 - 全局配置
+# ============================================================
+
+# ---------- 数据准备 ----------
+# 特征体系参考: 腾讯AMS/字节巨量引擎/快手磁力引擎/美团广告 等工业级广告系统
+data:
+  raw_dir: "data/raw"
+  processed_dir: "data/processed"
+
+  # ========== 用户特征 (User Profile) ==========
+  # 基础画像 + 设备环境 + 消费能力 + 兴趣标签 + 社交属性
+  user_features:
+    # --- 基础人口属性 ---
+    - user_id                   # 用户唯一标识
+    - age_bucket                # 年龄段: 18-24/25-34/35-44/45-54/55+
+    - gender                    # 性别: M/F/U
+    - city_level                # 城市等级: 一线/新一线/二线/三线/四线/五线及以下
+    - province                  # 省份 (34省级行政区)
+    - life_stage                # 人生阶段: 学生/职场新人/已婚未育/已婚已育/退休
+    # --- 设备环境 ---
+    - device_type               # 设备: phone/tablet/pc/smart_tv
+    - os_type                   # 系统: android/ios/windows/mac/harmonyos/linux
+    - device_brand              # 品牌: apple/huawei/xiaomi/oppo/vivo/samsung/...
+    - device_price_level        # 设备价格档: low/mid/high/premium (参考快手/字节)
+    - network_type              # 网络: wifi/4g/5g/3g/2g
+    - carrier                   # 运营商: cmcc/cucc/ctcc/other
+    - screen_resolution         # 屏幕分辨率: 720p/1080p/2k/4k
+    # --- 消费能力 (参考腾讯AMS用户画像) ---
+    - consumption_level         # 消费能力: low/medium/high/premium
+    - pay_channel_pref          # 支付偏好: wechat_pay/alipay/bank_card/credit
+    # --- 兴趣标签 (参考字节巨量引擎多级标签) ---
+    - interest_tags             # 一级兴趣: 多值特征, 逗号分隔
+    - interest_tags_l2          # 二级兴趣: 更细粒度, 多值特征
+    # --- 活跃度 ---
+    - user_active_level         # 活跃等级: dormant/low/medium/high/super
+    - reg_days_bucket           # 注册天数段: new_7d/30d/90d/180d/365d/veteran
+
+  # ========== 广告特征 (Ad/Creative) ==========
+  # 广告基础属性 + 创意维度 + 广告主维度 + 投放设置
+  ad_features:
+    # --- 广告基础 ---
+    - ad_id                     # 广告唯一标识
+    - campaign_id               # 推广计划ID
+    - advertiser_id             # 广告主ID
+    - ad_account_id             # 广告账户ID (一个广告主可多个账户)
+    # --- 行业/类目 (参考腾讯/美团广告行业分类) ---
+    - ad_category               # 投放目标: ecommerce/app_install/lead_gen/brand/local_service/game
+    - ad_industry_l1            # 一级行业: 电商/游戏/教育/金融/汽车/房产/本地生活/医疗/快消/...
+    - ad_industry_l2            # 二级行业: 服装/3C数码/美妆/食品/... (细分)
+    # --- 创意维度 (参考字节/快手创意库) ---
+    - creative_type             # 创意形式: single_image/multi_image/horizontal_video/vertical_video/carousel/live_feed/interactive
+    - creative_size             # 尺寸规格: 640x100/720x1280/1080x1920/1280x720/...
+    - creative_duration_bucket  # 视频时长段: 0s(图片)/0-6s/6-15s/15-30s/30-60s/60s+
+    - has_cta_button            # 是否有行动号召按钮: yes/no
+    - creative_label            # 创意标签: 促销/明星/剧情/口播/测评/... (多值)
+    # --- 落地页 (参考腾讯DPA/快手磁力) ---
+    - landing_page_type         # 落地页类型: app_store/h5/deeplink/mini_program/live_room/shop/form
+    # --- 出价与投放设置 ---
+    - bid_type                  # 出价方式: cpc/cpm/ocpc/ocpm/cpa
+    - delivery_speed            # 投放速度: standard/accelerated
+    - ad_status                 # 广告状态: active/paused/budget_exhausted/pending_review
+
+  # ========== 上下文特征 (Context) ==========
+  # 时间/地理/媒体/请求环境 + 实时竞争信号
+  context_features:
+    # --- 时间维度 ---
+    - hour_of_day               # 小时: 0-23
+    - day_of_week               # 星期: 0-6
+    - is_weekend                # 是否周末: yes/no
+    - time_period               # 时段: dawn/morning/noon/afternoon/evening/night/midnight
+    - is_holiday                # 是否节假日: yes/no
+    # --- 媒体/广告位 ---
+    - media_id                  # 媒体ID (微信/QQ/抖音/快手/美团/...)
+    - media_type                # 媒体类型: social/video/news/search/ecommerce/lifestyle
+    - slot_id                   # 广告位ID
+    - slot_type                 # 广告位类型: feed_stream/banner/interstitial/rewarded/splash/search/pre_roll
+    - slot_position             # 广告位位置: 1st/2nd/3rd/4th/5th+
+    # --- 请求环境 ---
+    - request_type              # 请求类型: organic/refresh/loadmore/push
+    - page_category             # 当前页面类目: home/detail/search/cart/profile/video
+    # --- 实时竞争信号 (参考美团/字节竞价) ---
+    - competing_ads_bucket      # 当前竞争广告数量: 0-5/5-10/10-20/20-50/50+
+    - ecpm_bucket               # 历史eCPM区间: low/medium/high/premium
+
+  # ========== 统计特征 (Real-time & Historical Statistics) ==========
+  # 参考美团/字节的实时统计特征, 作为连续值特征输入
+  stat_features:
+    # --- 广告侧实时统计 (过去1h/6h/24h滑窗) ---
+    - ad_ctr_1h                 # 广告最近1小时CTR (分桶)
+    - ad_ctr_24h                # 广告最近24小时CTR (分桶)
+    - ad_cvr_24h                # 广告最近24小时CVR (分桶)
+    - ad_imp_cnt_1h             # 广告最近1小时曝光量 (分桶)
+    - ad_click_cnt_24h          # 广告最近24小时点击量 (分桶)
+    # --- 用户侧统计 ---
+    - user_imp_cnt_24h          # 用户最近24h广告曝光次数 (分桶)
+    - user_click_cnt_24h        # 用户最近24h广告点击次数 (分桶)
+    - user_category_ctr         # 用户在该广告类目下的历史CTR (分桶)
+    # --- 交叉统计 (参考腾讯AMS交叉特征) ---
+    - user_x_ad_category_imp    # 用户×广告类目 历史曝光 (分桶)
+    - user_x_advertiser_click   # 用户×广告主 历史点击 (分桶)
+    - user_x_industry_cvr       # 用户×行业 历史CVR (分桶)
+
+  # ========== 行为序列 (User Behavior Sequence) ==========
+  # 参考字节DIN/DIEN, 快手多行为序列建模
+  behavior:
+    max_seq_len: 20             # 推理优化: 缩短至20 (原50), 配合层裁剪达标
+    feature_name: "click_ad_seq"  # 用户历史点击广告序列
+    # 可扩展的行为类型 (当前仅使用 click_ad_seq)
+    # - "imp_ad_seq"            # 曝光序列
+    # - "convert_ad_seq"        # 转化序列
+    # - "search_query_seq"      # 搜索词序列
+
+  # ========== 标签 ==========
+  labels:
+    - click            # 0/1
+    - conversion       # 0/1
+  # 数据划分
+  split:
+    train_ratio: 0.8
+    val_ratio: 0.1
+    test_ratio: 0.1
+    split_by: "date"   # 按日期划分，避免数据泄露
+
+# ---------- 语义ID生成 (RQ-VAE) ----------
+rqvae:
+  input_dim: 128          # 广告 embedding 维度
+  hidden_dim: 256
+  latent_dim: 64
+  num_quantizers: 4       # 残差量化层数 = 语义ID长度 L
+  codebook_size: 1024     # 每层码本大小 = 词表 V
+  commitment_cost: 0.25
+  ema_decay: 0.99
+  learning_rate: 1.0e-3
+  batch_size: 512
+  num_epochs: 30
+  checkpoint_dir: "checkpoints/rqvae"
+
+# ---------- STATIC 索引 ----------
+static_index:
+  vocab_size: 1024          # 与 rqvae.codebook_size 一致
+  dense_lookup_layers: 2    # 前2层用密集查找
+  sid_length: 4             # 与 rqvae.num_quantizers 一致
+
+# ---------- 混元 LLM 配置 ----------
+llm:
+  # 模型路径：可选混元不同尺寸
+  #   - tencent/Hunyuan-1.8B-Instruct    (推荐，~1.8B)
+  #   - tencent/Hunyuan-0.5B-Instruct    (~0.5B 端侧)
+  #   - tencent/Hunyuan-4B-Instruct      (~4B)
+  #   - tencent/Hunyuan-7B-Instruct      (~7B)
+  #   - 或任何 HuggingFace AutoModelForCausalLM 兼容模型
+  #   - 设为 "fallback" 则使用内置轻量级 Transformer (无需下载)
+  model_name_or_path: "tencent/Hunyuan-1.8B-Instruct"  # 混元 1.8B 模型
+  hidden_size: 2048         # fallback 模式的 hidden_size
+  freeze_backbone: true     # 冻结 LLM 主体参数
+  use_lora: true            # 使用 LoRA 低秩适配
+  bf16: true                # 使用 bfloat16
+  attn_implementation: "sdpa"  # V100(SM70)不支持FA2，使用SDPA
+  # LoRA 超参数
+  lora_rank: 16
+  lora_alpha: 32
+  lora_dropout: 0.15
+  lora_target_modules:      # 适配混元模型结构
+    - "q_proj"
+    - "k_proj"
+    - "v_proj"
+    - "o_proj"
+    - "gate_proj"
+    - "up_proj"
+    - "down_proj"
+
+# ---------- 生成式检索模型 (任务头配置) ----------
+model:
+  embed_dim: 256            # 仅原始模型使用
+  num_heads: 8
+  num_layers: 6
+  ffn_dim: 512
+  dropout: 0.3
+  max_seq_len: 128
+  vocab_size: 1024
+  num_user_features: 64
+  num_context_features: 32
+  # backbone 选择: "hunyuan" 使用混元 LLM, "custom" 使用原始自定义 Transformer
+  backbone: "hunyuan"
+
+# ---------- PEPNet 配置 ----------
+# 参考: PEPNet: Parameter and Embedding Personalized Network, KDD 2023
+pepnet:
+  embed_dim: 16               # 每个特征的 embedding 维度 (与 DeepFM 对齐)
+  hidden_units: [256, 128]    # PPNet DNN 隐藏层
+  gamma: 2.0                  # GateNU 门控系数 (论文默认 2.0)
+
+# ---------- 训练 ----------
+training:
+  learning_rate: 1.0e-4     # 降低学习率，减缓过拟合
+  weight_decay: 1.0e-2      # 增大权重衰减，强正则化
+  warmup_steps: 500
+  max_steps: 20000          # 数据量4x，适当增加训练步数
+  batch_size: 64            # V100 32GB
+  gradient_clip: 1.0
+  gradient_accumulation_steps: 2   # 等效 batch=192
+  eval_every: 500           # 频繁评估
+  save_every: 2000
+  early_stopping_patience: 8  # 数据量增大后给更多耐心
+  label_smoothing: 0.1      # Label Smoothing 防止过拟合
+  checkpoint_dir: "checkpoints/transformer"
+  log_dir: "logs"
+  use_amp: true             # 混合精度训练（GPU 开启）
+  bf16: true                # bfloat16 (Ampere+ GPU)
+  # 多任务权重
+  task_weights:
+    ctr: 0.5           # 点击率预估任务
+    cvr: 0.3           # 转化率预估任务
+    retrieval: 0.2     # 生成式检索任务
+
+# ---------- 推理 ----------
+inference:
+  beam_size: 10
+  tokens_per_beam: 5
+  batch_size: 512
+  device: "cuda"        # cuda / cpu
+  d_dense: 2
+  # 约束集
+  constraint:
+    enable: true
+    # 动态约束: 只检索活跃广告
+    filter_by: "is_active"
+    # 支持业务规则: 广告类别, 投放时段等
+    business_rules:
+      - field: "ad_category"
+        allowed: []       # 空表示不限制
+      - field: "budget_remaining"
+        min_value: 0.01
+
+# ---------- DSP 竞价 ----------
+bidding:
+  strategy: "ocpc"       # ocpc / ocpm / cpc / cpm
+  base_cpm: 10.0         # 基础CPM (元/千次)
+  ctr_threshold: 0.01    # CTR 过滤阈值
+  cvr_threshold: 0.005   # CVR 过滤阈值
+  budget_pacing: true     # 预算匀速消耗
+  frequency_cap: 3        # 每用户每天最多展示次数
+
+# ---------- 推理延迟优化 ----------
+# 目标: 混元 1.8B 端到端 CTR/CVR 推理 ≤20ms (p99, GPU)
+optimization:
+  target_latency_ms: 20.0       # p99 延迟目标 (ms)
+
+  # --- LLM 层裁剪 (推理加速) ---
+  # 仅保留 LLM 前 N 层, 混元 1.8B 共 32 层
+  # 设为 0 表示使用全部层, 设为 8 可降低约 75% LLM 延迟
+  num_inference_layers: 6
+
+  # --- 合并前向 (必选, 消除重复 LLM 调用) ---
+  # 一次 LLM 前向同时产出 CTR + CVR + user_repr
+  # 效果: 延迟降低约 50%
+  enable_merged_forward: true
+
+  # --- INT8 量化 ---
+  # V100: FP16 是最优方案, INT8(CPU) 和 bitsandbytes 都更慢
+  # A10/A100+: 推荐启用 bitsandbytes 或 torch INT8
+  enable_int8: false
+  quantization_method: "bitsandbytes"
+  calibration_steps: 100
+  quant_dtype: "int8"
+
+  # --- torch.compile 算子融合 ---
+  # 注意: V100 (SM70) 上 Triton 编译可能失败，建议在 A10/A100 上启用
+  enable_torch_compile: false
+  compile_backend: "inductor"   # inductor / cudagraphs / onnxrt
+  compile_mode: "max-autotune"  # default / reduce-overhead / max-autotune
+  compile_fullgraph: false
+
+  # --- ONNX Runtime ---
+  enable_onnx: false            # 默认关闭, 与 TensorRT 二选一
+  onnx_export_dir: "checkpoints/onnx"
+  onnx_opset: 17
+  onnx_optimize_level: 99       # ORT_ENABLE_ALL
+
+  # --- TensorRT ---
+  enable_tensorrt: false        # 需要先启用 ONNX 导出
+  tensorrt_dir: "checkpoints/tensorrt"
+  tensorrt_precision: "int8"    # fp16 / int8
+  max_batch_size: 32
+  tensorrt_workspace_mb: 2048   # TRT 工作空间 (MB)
+
+  # --- CUDA Graph ---
+  enable_cuda_graph: false      # 与 torch.compile(inductor) 冲突，不可同时启用
+  # 注意: CUDA Graph 要求输入 shape 完全固定,
+  # 不适用于变长 batch, 仅适合 batch=1 单请求场景
+
+  # --- Benchmark ---
+  benchmark_warmup: 30          # 预热次数 (GPU 需充分预热以获得稳定延迟)
+  benchmark_runs: 200           # 测试次数

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STATIC-DSP 系统</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0a0a10;
+    color: #e0e0e6;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  h1 { font-size: 32px; font-weight: 700; color: #fff; margin-bottom: 12px; }
+  .subtitle { font-size: 15px; color: #888; margin-bottom: 48px; }
+  .cards { display: flex; gap: 32px; flex-wrap: wrap; justify-content: center; }
+  .card {
+    background: linear-gradient(135deg, #141428 0%, #1a1a2e 100%);
+    border: 1px solid #2a2a4a;
+    border-radius: 16px;
+    padding: 40px 36px;
+    width: 320px;
+    text-align: center;
+    transition: transform .2s, border-color .2s;
+    text-decoration: none;
+    color: inherit;
+  }
+  .card:hover { transform: translateY(-4px); border-color: #6c5ce7; }
+  .card h2 { font-size: 20px; color: #fff; margin-bottom: 12px; }
+  .card p { font-size: 14px; color: #999; line-height: 1.6; }
+  .icon { font-size: 48px; margin-bottom: 16px; }
+</style>
+</head>
+<body>
+  <h1>STATIC-DSP 系统</h1>
+  <p class="subtitle">混元 LLM + DeepFM + PEPNet 三模型对比测试平台</p>
+  <div class="cards">
+    <a class="card" href="architecture.html">
+      <div class="icon">🏗️</div>
+      <h2>系统架构</h2>
+      <p>查看 STATIC-DSP 系统架构流程图，了解混元 LLM 版本的完整数据流和模块设计</p>
+    </a>
+    <a class="card" href="training_monitor.html">
+      <div class="icon">📊</div>
+      <h2>训练监控</h2>
+      <p>实时监控模型训练进度、损失曲线、AUC 指标和 GPU 资源使用情况</p>
+    </a>
+  </div>
+</body>
+</html>

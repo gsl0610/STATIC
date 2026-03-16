@@ -1,0 +1,20 @@
+torch>=2.1.0
+numpy>=1.24.0
+pandas>=2.0.0
+scikit-learn>=1.3.0
+tqdm>=4.65.0
+PyYAML>=6.0
+pyarrow>=14.0.0
+tensorboard>=2.15.0
+transformers>=4.40.0
+peft>=0.11.0
+accelerate>=0.30.0
+sentencepiece>=0.2.0
+
+# --- 推理优化 (可选, 按需安装) ---
+# INT8 量化 (GPU, bitsandbytes 后端)
+# pip install bitsandbytes>=0.43.0
+# ONNX Runtime (GPU 加速)
+# pip install onnxruntime-gpu>=1.17.0 onnx>=1.16.0
+# TensorRT (NVIDIA GPU, 最大性能)
+# pip install tensorrt>=10.0.0
